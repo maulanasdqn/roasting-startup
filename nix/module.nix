@@ -109,8 +109,11 @@ in
       requires = [ "postgresql.service" ];
 
       environment = {
+        LEPTOS_OUTPUT_NAME = "roasting-startup";
         LEPTOS_SITE_ROOT = "${package}/site";
+        LEPTOS_SITE_PKG_DIR = "pkg";
         LEPTOS_SITE_ADDR = "${cfg.host}:${toString cfg.port}";
+        LEPTOS_ENV = "production";
         RUST_LOG = "info,roasting_app=debug,roasting_api=debug";
       };
 

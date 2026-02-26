@@ -38,7 +38,7 @@ async fn main() {
         )
         .init();
 
-    let conf = get_configuration(Some("Cargo.toml")).expect("Failed to load Leptos config");
+    let conf = get_configuration(None).expect("Failed to load Leptos config");
     let leptos_options = conf.leptos_options;
     let addr = leptos_options.site_addr;
 
