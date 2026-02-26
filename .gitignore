@@ -7,3 +7,6 @@
 result
 result-*
 .direnv
+
+# Local PostgreSQL data
+.postgres

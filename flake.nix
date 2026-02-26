@@ -36,12 +36,14 @@
             (pkgs.lib.hasSuffix ".css" path) ||
             (pkgs.lib.hasSuffix ".html" path) ||
             (pkgs.lib.hasSuffix ".js" path) ||
+            (pkgs.lib.hasSuffix ".sql" path) ||
             (pkgs.lib.hasSuffix ".ico" path) ||
             (pkgs.lib.hasSuffix ".png" path) ||
             (pkgs.lib.hasSuffix ".svg" path) ||
             (pkgs.lib.hasSuffix ".webp" path) ||
             (pkgs.lib.hasInfix "/public/" path) ||
             (pkgs.lib.hasInfix "/style/" path) ||
+            (pkgs.lib.hasInfix "/migrations/" path) ||
             (craneLib.filterCargoSources path type);
         };
 
@@ -56,6 +58,7 @@
             wasm-bindgen-cli
             binaryen
             dart-sass
+            llvmPackages.lld  # Provides wasm-ld linker
           ];
 
           buildInputs = with pkgs; [
@@ -63,8 +66,6 @@
           ] ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
             libiconv
           ];
-
-          CARGO_BUILD_TARGET = "";
         };
 
         cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
@@ -186,6 +187,9 @@
             dart-sass
             wasm-bindgen-cli
             binaryen
+            llvmPackages.lld  # Provides wasm-ld linker
+            # Database
+            postgresql_16
           ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
             chromium
           ];
@@ -194,6 +198,62 @@
           LEPTOS_SITE_PKG_DIR = "pkg";
           LEPTOS_SITE_ADDR = "127.0.0.1:3000";
           LEPTOS_RELOAD_PORT = "3001";
+
+          # PostgreSQL data directory
+          PGDATA = ".postgres";
+          PGHOST = "localhost";
+          PGPORT = "5432";
+          PGDATABASE = "roasting_startup";
+
+          shellHook = ''
+            # Initialize PostgreSQL data directory if it doesn't exist
+            if [ ! -d "$PGDATA" ]; then
+              echo "Initializing PostgreSQL database..."
+              initdb -D "$PGDATA" --no-locale --encoding=UTF8
+              echo "unix_socket_directories = '$PWD/$PGDATA'" >> "$PGDATA/postgresql.conf"
+              echo "listen_addresses = 'localhost'" >> "$PGDATA/postgresql.conf"
+              echo "port = 5432" >> "$PGDATA/postgresql.conf"
+            fi
+
+            # Helper functions
+            start_db() {
+              if ! pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
+                echo "Starting PostgreSQL..."
+                pg_ctl -D "$PGDATA" -l "$PGDATA/postgresql.log" start
+                sleep 2
+                # Create database if it doesn't exist
+                createdb roasting_startup 2>/dev/null || true
+              else
+                echo "PostgreSQL is already running"
+              fi
+            }
+
+            stop_db() {
+              if pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
+                echo "Stopping PostgreSQL..."
+                pg_ctl -D "$PGDATA" stop
+              else
+                echo "PostgreSQL is not running"
+              fi
+            }
+
+            export -f start_db stop_db
+
+            echo ""
+            echo "🔥 Roasting Startup Dev Environment"
+            echo "===================================="
+            echo ""
+            echo "Database commands:"
+            echo "  start_db  - Start PostgreSQL"
+            echo "  stop_db   - Stop PostgreSQL"
+            echo ""
+            echo "Run the app:"
+            echo "  cargo leptos watch"
+            echo ""
+            echo "Required env vars (copy from .env.example):"
+            echo "  DATABASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, OPENROUTER_API_KEY"
+            echo ""
+          '';
         };
       }
     ) // {

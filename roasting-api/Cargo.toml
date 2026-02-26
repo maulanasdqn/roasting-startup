@@ -36,6 +36,12 @@ regex-lite.workspace = true
 url.workspace = true
 urlencoding = "2"
 
+# Database & Auth
+sea-orm.workspace = true
+oauth2.workspace = true
+tower-sessions.workspace = true
+uuid.workspace = true
+
 [features]
 default = ["ssr"]
 ssr = [

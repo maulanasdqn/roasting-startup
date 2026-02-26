@@ -245,6 +245,336 @@
   40%, 80% { transform: translateX(5px); }
 }
 
+// Home Layout (side-by-side)
+.home-layout {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-top: $spacing-lg;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    gap: $spacing-xl;
+    align-items: flex-start;
+  }
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// Auth Section
+.auth-section {
+  text-align: center;
+  padding: $spacing-md;
+  background: $surface;
+  border: 2px solid $overlay;
+  border-radius: $radius-md;
+
+  @media (min-width: 768px) {
+    padding: $spacing-lg;
+  }
+
+  &--logged-in {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    align-items: center;
+
+    @media (min-width: 480px) {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+
+  &__hint {
+    margin-top: $spacing-sm;
+    font-size: 0.8rem;
+    color: $muted;
+  }
+}
+
+// User Info (logged in state)
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid $overlay;
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: $text;
+  }
+
+  &__email {
+    font-size: 0.8rem;
+    color: $muted;
+  }
+}
+
+// Logout button
+.logout-form {
+  margin: 0;
+}
+
+.logout-btn {
+  padding: $spacing-sm $spacing-md;
+  background: $overlay;
+  color: $text;
+  border: none;
+  border-radius: $radius-full;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: $highlight-med;
+    color: $love;
+  }
+}
+
+// Google Login Button
+.google-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: $radius-full;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all $transition-normal;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-family: 'Google Sans', $font-family;
+  letter-spacing: 0.25px;
+
+  @media (min-width: 768px) {
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-xl;
+    font-size: 0.95rem;
+  }
+
+  &:hover {
+    background: #f8faff;
+    border-color: #c7c9cc;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    color: #1a73e8;
+  }
+
+  &:active {
+    background: #eef3fc;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Leaderboard
+.leaderboard {
+  background: $surface;
+  border: 2px solid $overlay;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+
+  @media (min-width: 768px) {
+    padding: $spacing-lg;
+  }
+
+  &__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $gold;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 2px solid $overlay;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    @media (min-width: 768px) {
+      font-size: 1.25rem;
+      margin-bottom: $spacing-lg;
+      padding-bottom: $spacing-md;
+    }
+
+    &::before {
+      content: "🏆";
+    }
+  }
+
+  &__loading,
+  &__empty,
+  &__error {
+    text-align: center;
+    color: $muted;
+    padding: $spacing-lg;
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  &__error {
+    color: $love;
+  }
+
+  &__list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    @media (min-width: 768px) {
+      gap: $spacing-sm;
+    }
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+    background: $highlight-low;
+    border-radius: $radius-md;
+    transition: background $transition-normal;
+
+    @media (min-width: 768px) {
+      gap: $spacing-md;
+      padding: $spacing-md;
+    }
+
+    &:hover {
+      background: $highlight-med;
+    }
+  }
+
+  &__rank {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $overlay;
+    color: $text;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    @media (min-width: 768px) {
+      width: 28px;
+      height: 28px;
+      font-size: 0.85rem;
+    }
+  }
+
+  &__item:nth-child(1) &__rank {
+    background: $gold;
+    color: $base;
+  }
+
+  &__item:nth-child(2) &__rank {
+    background: #c0c0c0;
+    color: $base;
+  }
+
+  &__item:nth-child(3) &__rank {
+    background: #cd7f32;
+    color: $base;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: $text;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (min-width: 768px) {
+      font-size: 0.95rem;
+    }
+
+    &:hover {
+      color: $pine;
+    }
+  }
+
+  &__author {
+    font-size: 0.7rem;
+    color: $muted;
+
+    @media (min-width: 768px) {
+      font-size: 0.8rem;
+    }
+  }
+
+  &__fire {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: $love;
+    white-space: nowrap;
+
+    @media (min-width: 768px) {
+      font-size: 0.95rem;
+    }
+  }
+}
+
+// Vertical URL Form variant
+.url-form--vertical {
+  flex-direction: column;
+
+  @media (min-width: 640px) {
+    flex-direction: column;
+  }
+
+  .url-form__button {
+    width: 100%;
+  }
+}
+
 // Footer
 .footer {
   text-align: center;
