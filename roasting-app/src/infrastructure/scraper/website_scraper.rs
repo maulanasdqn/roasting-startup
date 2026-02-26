@@ -241,7 +241,68 @@ impl WebsiteScraper {
             return None;
         }
 
-        self.parse_html(parsed_url.as_str(), &html).ok()
+        // Parse Google Cache HTML with special handling for title extraction
+        self.parse_google_cache_html(parsed_url, &html)
+    }
+
+    fn parse_google_cache_html(&self, parsed_url: &Url, html: &str) -> Option<StartupInfo> {
+        let document = Html::parse_document(html);
+
+        // Google Cache wraps the original content with its own UI
+        // The original page title might be in different locations:
+        // 1. Inside the cached content's <title> (not Google's wrapper)
+        // 2. In og:title meta tag
+        // 3. In the cache header showing the original URL
+
+        // Try to extract title from og:title (often preserved in cache)
+        let og_title = Selector::parse("meta[property='og:title']").ok()
+            .and_then(|sel| document.select(&sel).next())
+            .and_then(|el| el.value().attr("content"))
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty() && !s.to_lowercase().contains("google"));
+
+        // Try twitter:title as fallback
+        let twitter_title = Selector::parse("meta[name='twitter:title']").ok()
+            .and_then(|sel| document.select(&sel).next())
+            .and_then(|el| el.value().attr("content"))
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty() && !s.to_lowercase().contains("google"));
+
+        // Get the <title> tag but filter out Google's wrapper title
+        let page_title = self.extract_title(&document)
+            .filter(|t| {
+                let lower = t.to_lowercase();
+                !lower.contains("google search") &&
+                !lower.contains("google cache") &&
+                !lower.starts_with("cache:") &&
+                !lower.contains("webcache.googleusercontent")
+            });
+
+        // Use domain name as fallback title
+        let domain = parsed_url.host_str().unwrap_or("unknown");
+        let domain_parts: Vec<&str> = domain.split('.').collect();
+        let domain_name = if domain_parts.len() > 1 {
+            domain_parts[domain_parts.len() - 2].to_string()
+        } else {
+            domain.to_string()
+        };
+        let fallback_title = format!("{} (dari Google Cache)", domain_name);
+
+        // Priority: og:title > twitter:title > filtered page title > domain name
+        let title = og_title
+            .or(twitter_title)
+            .or(page_title)
+            .unwrap_or(fallback_title);
+
+        let description = self.extract_meta_description(&document);
+        let headings = self.extract_headings(&document);
+        let content_summary = self.extract_content_summary(&document);
+
+        Some(StartupInfo::new(parsed_url.to_string())
+            .with_title(Some(title))
+            .with_description(description)
+            .with_headings(headings)
+            .with_content_summary(content_summary))
     }
 
     fn is_content_minimal(&self, info: &StartupInfo) -> bool {

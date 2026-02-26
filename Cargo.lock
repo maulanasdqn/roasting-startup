@@ -4034,6 +4034,9 @@ dependencies = [
  "roasting-errors",
  "serde",
  "server_fn",
+ "tower-sessions",
+ "tracing",
+ "uuid",
  "wasm-bindgen",
 ]
 
