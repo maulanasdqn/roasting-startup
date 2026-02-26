@@ -188,6 +188,11 @@ in
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
 
+      # Rate limiting zone
+      appendHttpConfig = ''
+        limit_req_zone $binary_remote_addr zone=roasting_limit:10m rate=10r/s;
+      '';
+
       virtualHosts.${cfg.domain} = {
         enableACME = cfg.nginx.enableSSL && cfg.acmeEmail != null;
         forceSSL = cfg.nginx.enableSSL && cfg.acmeEmail != null;
@@ -227,11 +232,6 @@ in
         };
       };
     };
-
-    # Rate limiting zone
-    services.nginx.appendHttpConfig = lib.mkIf (cfg.nginx.enable && cfg.domain != null) ''
-      limit_req_zone $binary_remote_addr zone=roasting_limit:10m rate=10r/s;
-    '';
 
     security.acme = lib.mkIf (cfg.nginx.enableSSL && cfg.acmeEmail != null && cfg.domain != null) {
       acceptTerms = true;
