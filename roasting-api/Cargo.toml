@@ -1,0 +1,48 @@
+[package]
+name = "roasting-api"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "roasting-api"
+path = "src/main.rs"
+
+[dependencies]
+roasting-app = { path = "../roasting-app" }
+roasting-ui = { path = "../roasting-ui", features = ["ssr"] }
+roasting-errors = { path = "../roasting-errors", features = ["ssr"] }
+
+leptos.workspace = true
+leptos_axum.workspace = true
+leptos_meta.workspace = true
+leptos_router.workspace = true
+server_fn.workspace = true
+
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+governor.workspace = true
+dashmap.workspace = true
+chrono.workspace = true
+regex-lite.workspace = true
+url.workspace = true
+urlencoding = "2"
+
+[features]
+default = ["ssr"]
+ssr = [
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+    "roasting-app/ssr",
+]
+headless = ["ssr", "roasting-app/headless"]
+local-llm = ["ssr", "roasting-app/local-llm"]

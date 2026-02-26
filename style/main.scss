@@ -1,0 +1,55 @@
+@use 'variables' as *;
+@use 'components';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: $base;
+  color: $text;
+  font-family: $font-family;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: $spacing-lg;
+
+  @media (min-width: 640px) {
+    padding: $spacing-xl;
+  }
+}
+
+a {
+  color: $pine;
+  text-decoration: none;
+  transition: color $transition-normal;
+
+  &:hover {
+    color: darken($pine, 10%);
+  }
+}
+
+::selection {
+  background: rgba($pine, 0.2);
+  color: $text;
+}
+
+input,
+button,
+textarea {
+  font-family: inherit;
+}

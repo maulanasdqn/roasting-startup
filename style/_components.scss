@@ -1,0 +1,256 @@
+@use 'variables' as *;
+
+// Hero Section
+.hero {
+  text-align: center;
+  padding: $spacing-3xl 0 $spacing-2xl;
+
+  &__title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    color: $love;
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.02em;
+  }
+
+  &__subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: $subtle;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+}
+
+// URL Input Form
+.url-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin: $spacing-xl 0;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+  }
+
+  &__input {
+    flex: 1;
+    padding: $spacing-md $spacing-lg;
+    border: 2px solid $overlay;
+    border-radius: $radius-md;
+    background: $surface;
+    color: $text;
+    font-size: 1rem;
+    font-family: $font-family;
+    transition: border-color $transition-normal, box-shadow $transition-normal;
+
+    &:focus {
+      outline: none;
+      border-color: $pine;
+      box-shadow: 0 0 0 3px rgba($pine, 0.15);
+    }
+
+    &::placeholder {
+      color: $muted;
+    }
+
+    &:disabled {
+      background: $highlight-low;
+      cursor: not-allowed;
+    }
+  }
+
+  &__button {
+    padding: $spacing-md $spacing-xl;
+    background: $love;
+    color: $base;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: $font-family;
+    cursor: pointer;
+    transition: background $transition-normal, transform $transition-fast;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: darken($love, 8%);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background: $muted;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Loading Spinner
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-3xl;
+
+  &__spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid $overlay;
+    border-top-color: $gold;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  &__text {
+    margin-top: $spacing-lg;
+    color: $subtle;
+    font-style: italic;
+    font-size: 1.1rem;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Roast Display
+.roast {
+  background: $surface;
+  border: 2px solid $overlay;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  margin: $spacing-xl 0;
+  animation: fadeIn 0.5s ease;
+
+  &__title {
+    color: $love;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: 2px solid $overlay;
+  }
+
+  &__content {
+    color: $text;
+    line-height: 1.8;
+    font-size: 1.1rem;
+
+    p {
+      margin-bottom: $spacing-md;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+    padding-top: $spacing-lg;
+    border-top: 2px solid $overlay;
+  }
+
+  &__button {
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: $font-family;
+    cursor: pointer;
+    transition: background $transition-normal, transform $transition-fast;
+
+    &--primary {
+      background: $pine;
+      color: $base;
+
+      &:hover {
+        background: darken($pine, 8%);
+        transform: translateY(-1px);
+      }
+    }
+
+    &--secondary {
+      background: $overlay;
+      color: $text;
+
+      &:hover {
+        background: $highlight-med;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Error Display
+.error {
+  background: lighten($love, 38%);
+  border: 2px solid $love;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  margin: $spacing-xl 0;
+  animation: shake 0.5s ease;
+
+  &__title {
+    font-weight: 700;
+    color: $love;
+    margin-bottom: $spacing-sm;
+    font-size: 1.1rem;
+  }
+
+  &__message {
+    color: darken($love, 10%);
+    margin-bottom: $spacing-md;
+  }
+
+  &__retry {
+    padding: $spacing-sm $spacing-md;
+    background: $love;
+    color: $base;
+    border: none;
+    border-radius: $radius-sm;
+    font-weight: 600;
+    font-family: $font-family;
+    cursor: pointer;
+    transition: background $transition-normal;
+
+    &:hover {
+      background: darken($love, 8%);
+    }
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+// Footer
+.footer {
+  text-align: center;
+  padding: $spacing-2xl 0;
+  color: $muted;
+  font-size: 0.9rem;
+  border-top: 1px solid $overlay;
+  margin-top: $spacing-3xl;
+}

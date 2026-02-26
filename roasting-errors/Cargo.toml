@@ -1,0 +1,14 @@
+[package]
+name = "roasting-errors"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+axum = { workspace = true, optional = true }
+server_fn = { workspace = true, optional = true }
+
+[features]
+default = []
+ssr = ["dep:axum", "dep:server_fn"]

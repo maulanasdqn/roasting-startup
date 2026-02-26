@@ -1,0 +1,26 @@
+[package]
+name = "roasting-ui"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+roasting-app = { path = "../roasting-app" }
+roasting-errors = { path = "../roasting-errors" }
+
+leptos.workspace = true
+leptos_meta.workspace = true
+leptos_router.workspace = true
+server_fn.workspace = true
+
+serde.workspace = true
+
+wasm-bindgen = { version = "0.2", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[features]
+default = []
+hydrate = ["leptos/hydrate", "dep:wasm-bindgen", "dep:console_error_panic_hook"]
+ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "roasting-app/ssr"]
