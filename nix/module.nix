@@ -228,6 +228,13 @@ in
             proxy_set_header Host $host;
             expires 7d;
             add_header Cache-Control "public, immutable";
+
+            # Re-add security headers (add_header in nested location drops parent headers)
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-XSS-Protection "1; mode=block" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+            add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
           '';
         };
       };
