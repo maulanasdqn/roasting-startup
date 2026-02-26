@@ -3,25 +3,11 @@ flake:
 
 let
   cfg = config.services.roasting-startup;
-  package = if cfg.useLocalLlm
-    then flake.packages.${pkgs.system}.local-llm
-    else flake.packages.${pkgs.system}.default;
+  package = flake.packages.${pkgs.system}.default;
 in
 {
   options.services.roasting-startup = {
     enable = lib.mkEnableOption "Roasting Startup service";
-
-    useLocalLlm = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = ''
-        Use local LLM (SmolLM2-135M-Instruct) instead of OpenRouter API.
-        When enabled, no API key is needed but requires more server resources.
-        Model will be downloaded from Hugging Face on first run (~270MB).
-        Note: SmolLM2-135M is a small model with limited quality.
-        For best results, use OpenRouter with a larger model.
-      '';
-    };
 
     port = lib.mkOption {
       type = lib.types.port;
@@ -38,7 +24,14 @@ in
     environmentFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
-      description = "Environment file containing OPENROUTER_API_KEY (not needed if useLocalLlm is true)";
+      description = ''
+        Environment file containing secrets:
+        - DATABASE_URL
+        - OPENROUTER_API_KEY
+        - GOOGLE_CLIENT_ID
+        - GOOGLE_CLIENT_SECRET
+        - GOOGLE_REDIRECT_URI
+      '';
     };
 
     domain = lib.mkOption {
@@ -93,6 +86,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.environmentFile != null;
+        message = "roasting-startup requires an environment file with DATABASE_URL and other secrets";
+      }
+    ];
+
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
@@ -105,16 +105,13 @@ in
     systemd.services.roasting-startup = {
       description = "Roasting Startup - Indonesian startup roasting website";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
+      after = [ "network.target" "postgresql.service" ];
+      requires = [ "postgresql.service" ];
 
       environment = {
         LEPTOS_SITE_ROOT = "${package}/site";
         LEPTOS_SITE_ADDR = "${cfg.host}:${toString cfg.port}";
-        RUST_LOG = "info";
-        # HF cache for model downloads
-        HF_HOME = "${cfg.dataDir}/.cache/huggingface";
-      } // lib.optionalAttrs cfg.useLocalLlm {
-        USE_LOCAL_LLM = "1";
+        RUST_LOG = "info,roasting_app=debug,roasting_api=debug";
       };
 
       serviceConfig = {
@@ -126,20 +123,29 @@ in
         Restart = "on-failure";
         RestartSec = 5;
 
-        EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
+        EnvironmentFile = cfg.environmentFile;
 
+        # Security hardening
         PrivateTmp = true;
         ProtectSystem = "strict";
         ProtectHome = true;
         NoNewPrivileges = true;
         ReadWritePaths = [ cfg.dataDir ];
 
+        # Restrict capabilities
         CapabilityBoundingSet = "";
-        SystemCallFilter = [ "@system-service" "~@privileged" ];
+        AmbientCapabilities = "";
+
+        # System call filtering
+        SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
         SystemCallArchitectures = "native";
+
+        # Namespace restrictions
         RestrictNamespaces = true;
         RestrictRealtime = true;
         RestrictSUIDSGID = true;
+
+        # Additional hardening
         LockPersonality = true;
         ProtectClock = true;
         ProtectControlGroups = true;
@@ -147,18 +153,53 @@ in
         ProtectKernelModules = true;
         ProtectKernelTunables = true;
         ProtectProc = "invisible";
+        ProcSubset = "pid";
+
+        # Memory protection - disabled for Rust runtime
         MemoryDenyWriteExecute = false;
+
+        # Private devices
+        PrivateDevices = true;
+
+        # Remove all capabilities
+        SecureBits = "no-setuid-fixup-locked noroot-locked";
+
+        # Restrict address families to only what's needed
+        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+
+        # Hide /proc entries
+        ProtectHostname = true;
+
+        # Limit resource usage
+        MemoryMax = "512M";
+        TasksMax = 100;
       };
 
+      # Chromium needed for website scraping
       path = [ pkgs.chromium ];
     };
 
     services.nginx = lib.mkIf (cfg.nginx.enable && cfg.domain != null) {
       enable = true;
 
+      # Security headers
+      recommendedGzipSettings = true;
+      recommendedOptimisation = true;
+      recommendedProxySettings = true;
+      recommendedTlsSettings = true;
+
       virtualHosts.${cfg.domain} = {
         enableACME = cfg.nginx.enableSSL && cfg.acmeEmail != null;
         forceSSL = cfg.nginx.enableSSL && cfg.acmeEmail != null;
+
+        # Security headers
+        extraConfig = ''
+          add_header X-Frame-Options "SAMEORIGIN" always;
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header X-XSS-Protection "1; mode=block" always;
+          add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+          add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+        '';
 
         locations."/" = {
           proxyPass = "http://${cfg.host}:${toString cfg.port}";
@@ -168,10 +209,29 @@ in
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Rate limiting at nginx level
+            limit_req zone=roasting_limit burst=10 nodelay;
+            limit_req_status 429;
+          '';
+        };
+
+        # Static assets caching
+        locations."~* \\.(js|css|png|jpg|jpeg|gif|ico|wasm)$" = {
+          proxyPass = "http://${cfg.host}:${toString cfg.port}";
+          extraConfig = ''
+            proxy_set_header Host $host;
+            expires 7d;
+            add_header Cache-Control "public, immutable";
           '';
         };
       };
     };
+
+    # Rate limiting zone
+    services.nginx.appendHttpConfig = lib.mkIf (cfg.nginx.enable && cfg.domain != null) ''
+      limit_req_zone $binary_remote_addr zone=roasting_limit:10m rate=10r/s;
+    '';
 
     security.acme = lib.mkIf (cfg.nginx.enableSSL && cfg.acmeEmail != null && cfg.domain != null) {
       acceptTerms = true;
