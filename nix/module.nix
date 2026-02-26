@@ -128,54 +128,54 @@ in
 
         EnvironmentFile = cfg.environmentFile;
 
-        # Security hardening
+        # Security hardening (relaxed for Chromium compatibility)
         PrivateTmp = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        NoNewPrivileges = true;
-        ReadWritePaths = [ cfg.dataDir ];
+        ProtectSystem = "full";  # Changed from "strict" for Chromium
+        ProtectHome = "read-only";  # Chromium may need to read some paths
+        ReadWritePaths = [ cfg.dataDir "/tmp" ];
 
-        # Restrict capabilities
-        CapabilityBoundingSet = "";
+        # Chromium sandbox requirements:
+        # - NoNewPrivileges must be false for Chromium's setuid sandbox
+        # - Namespaces must be allowed for Chromium's namespace sandbox
+        NoNewPrivileges = false;
+
+        # Restrict capabilities (keep minimal)
+        CapabilityBoundingSet = [ "CAP_SYS_ADMIN" ];  # Needed for Chromium sandbox
         AmbientCapabilities = "";
 
-        # System call filtering
-        SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
+        # System call filtering - allow Chromium syscalls
         SystemCallArchitectures = "native";
+        # Removed restrictive SystemCallFilter - Chromium needs many syscalls
 
-        # Namespace restrictions
-        RestrictNamespaces = true;
+        # Namespace restrictions - disabled for Chromium
+        RestrictNamespaces = false;  # Chromium creates namespaces for sandboxing
         RestrictRealtime = true;
-        RestrictSUIDSGID = true;
+        RestrictSUIDSGID = false;  # Chromium sandbox may need this
 
-        # Additional hardening
+        # Additional hardening (kept where compatible)
         LockPersonality = true;
         ProtectClock = true;
         ProtectControlGroups = true;
         ProtectKernelLogs = true;
         ProtectKernelModules = true;
         ProtectKernelTunables = true;
-        ProtectProc = "invisible";
-        ProcSubset = "pid";
+        # Removed ProtectProc and ProcSubset - Chromium reads /proc
 
-        # Memory protection - disabled for Rust runtime
+        # Memory protection - disabled for Rust runtime and Chromium JIT
         MemoryDenyWriteExecute = false;
 
-        # Private devices
-        PrivateDevices = true;
+        # Devices - Chromium needs /dev/shm and possibly GPU access
+        PrivateDevices = false;
 
-        # Remove all capabilities
-        SecureBits = "no-setuid-fixup-locked noroot-locked";
+        # Restrict address families
+        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" "AF_NETLINK" ];
 
-        # Restrict address families to only what's needed
-        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
-
-        # Hide /proc entries
+        # Hide hostname
         ProtectHostname = true;
 
-        # Limit resource usage
-        MemoryMax = "512M";
-        TasksMax = 100;
+        # Resource limits (increased for Chromium)
+        MemoryMax = "2G";
+        TasksMax = 512;  # Chromium spawns many processes
       };
 
       # Chromium needed for website scraping
