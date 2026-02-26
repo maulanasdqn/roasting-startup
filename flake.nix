@@ -122,13 +122,13 @@
 
           buildPhase = ''
             mkdir -p site/pkg
-            sass style/main.scss site/pkg/main.css --style=compressed --no-source-map
+            sass style/roasting-startup.scss site/pkg/roasting-startup.css --style=compressed --no-source-map
           '';
 
           installPhase = ''
             mkdir -p $out/site/pkg
             cp -r public/* $out/site/ 2>/dev/null || true
-            cp site/pkg/main.css $out/site/pkg/
+            cp site/pkg/roasting-startup.css $out/site/pkg/
           '';
         };
 
