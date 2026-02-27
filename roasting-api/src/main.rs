@@ -508,6 +508,7 @@ async fn handle_get_roast(ctx: AppContext, session: Session, roast_id: Uuid) -> 
 fn render_result_page(startup_name: &str, roast_text: &str, url: &str) -> String {
     let html_content = simple_markdown_to_html(roast_text);
     let encoded_url = urlencoding::encode(url);
+    let posthog = posthog_script();
     format!(r#"<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -516,6 +517,7 @@ fn render_result_page(startup_name: &str, roast_text: &str, url: &str) -> String
     <title>Roasting: {startup_name}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <style>{CSS}</style>
+    {posthog}
     <script>history.replaceState(null, '', '/roast?url={encoded_url}');</script>
 </head>
 <body>
@@ -529,11 +531,12 @@ fn render_result_page(startup_name: &str, roast_text: &str, url: &str) -> String
         </div>
     </main>
 </body>
-</html>"#, startup_name = startup_name, html_content = html_content, CSS = CSS, encoded_url = encoded_url)
+</html>"#, startup_name = startup_name, html_content = html_content, CSS = CSS, encoded_url = encoded_url, posthog = posthog)
 }
 
-fn render_result_page_with_id(startup_name: &str, roast_text: &str, url: &str, roast_id: Uuid) -> String {
+fn render_result_page_with_id(startup_name: &str, roast_text: &str, _url: &str, roast_id: Uuid) -> String {
     let html_content = simple_markdown_to_html(roast_text);
+    let posthog = posthog_script();
     format!(r#"<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -542,6 +545,7 @@ fn render_result_page_with_id(startup_name: &str, roast_text: &str, url: &str, r
     <title>Roasting: {startup_name}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <style>{CSS}</style>
+    {posthog}
     <script>history.replaceState(null, '', '/r/{roast_id}');</script>
 </head>
 <body>
@@ -600,10 +604,11 @@ fn render_result_page_with_id(startup_name: &str, roast_text: &str, url: &str, r
         }}
     </script>
 </body>
-</html>"#, startup_name = startup_name, html_content = html_content, CSS = CSS, roast_id = roast_id)
+</html>"#, startup_name = startup_name, html_content = html_content, CSS = CSS, roast_id = roast_id, posthog = posthog)
 }
 
 fn render_error_page(message: &str) -> String {
+    let posthog = posthog_script();
     format!(r#"<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -612,6 +617,7 @@ fn render_error_page(message: &str) -> String {
     <title>Error - Roasting Startup</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <style>{CSS}</style>
+    {posthog}
 </head>
 <body>
     <main class="container">
@@ -622,7 +628,7 @@ fn render_error_page(message: &str) -> String {
         </div>
     </main>
 </body>
-</html>"#, message = message, CSS = CSS)
+</html>"#, message = message, CSS = CSS, posthog = posthog)
 }
 
 fn render_leaderboard_page(roasts: &[RoastWithDetails]) -> String {
@@ -659,6 +665,7 @@ fn render_leaderboard_page(roasts: &[RoastWithDetails]) -> String {
         ));
     }
 
+    let posthog = posthog_script();
     format!(r#"<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -666,6 +673,7 @@ fn render_leaderboard_page(roasts: &[RoastWithDetails]) -> String {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Leaderboard - Roasting Startup</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+    {posthog}
     <style>{CSS}
     .lb-page {{ padding: 1rem 0; }}
     .lb-title {{
@@ -786,7 +794,7 @@ fn render_leaderboard_page(roasts: &[RoastWithDetails]) -> String {
         </div>
     </main>
 </body>
-</html>"#, CSS = CSS, cards = cards)
+</html>"#, CSS = CSS, cards = cards, posthog = posthog)
 }
 
 fn simple_markdown_to_html(text: &str) -> String {
@@ -834,6 +842,20 @@ fn fix_em_tags(text: &str) -> String {
         }
     }
     result
+}
+
+fn posthog_script() -> String {
+    let posthog_key = std::env::var("POSTHOG_KEY").unwrap_or_default();
+    let posthog_host = std::env::var("POSTHOG_HOST").unwrap_or_else(|_| "https://us.i.posthog.com".to_string());
+
+    if posthog_key.is_empty() {
+        return String::new();
+    }
+
+    format!(r#"<script>
+    !function(t,e){{var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){{function g(t,e){{var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){{t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){{var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}},u.people.toString=function(){{return u.toString(1)+".people (stub)"}},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])}},e.__SV=1)}}(document,window.posthog||[]);
+    posthog.init('{posthog_key}',{{api_host:'{posthog_host}', person_profiles: 'identified_only'}});
+</script>"#, posthog_key = posthog_key, posthog_host = posthog_host)
 }
 
 const CSS: &str = r#"
@@ -977,6 +999,8 @@ fn shell(_options: LeptosOptions) -> impl IntoView {
     use leptos::prelude::*;
     use leptos_meta::*;
 
+    let posthog = posthog_script();
+
     let css = r#"
         :root {
             --base: #faf4ed;
@@ -1085,6 +1109,7 @@ fn shell(_options: LeptosOptions) -> impl IntoView {
                 <title>"Roasting Startup Indonesia"</title>
                 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>"/>
                 <style>{css}</style>
+                <div inner_html=posthog></div>
                 <MetaTags/>
             </head>
             <body>
